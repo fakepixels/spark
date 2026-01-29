@@ -81,10 +81,16 @@ export function ChatPanel() {
       console.log('First 200 chars:', accumulated.substring(0, 200));
 
       // Check if Claude is asking to generate style previews
-      const styleGenerationTrigger = /generate.*3.*style|style.*preview|choose.*style/i.test(accumulated);
+      const styleGenerationTrigger = /generate.*3.*style|style.*preview|choose.*style|3.*unique.*style/i.test(accumulated);
+
+      console.log('Checking for style trigger:', {
+        hasMatch: styleGenerationTrigger,
+        hasExistingPreviews: stylePreviews.length > 0,
+        willTrigger: styleGenerationTrigger && !stylePreviews.length
+      });
 
       if (styleGenerationTrigger && !stylePreviews.length) {
-        console.log('🎨 Detected style generation trigger!');
+        console.log('🎨 Detected style generation trigger! Calling handleStyleGeneration...');
         // Trigger style generation
         handleStyleGeneration();
       } else if (accumulated && containsHTML(accumulated)) {
