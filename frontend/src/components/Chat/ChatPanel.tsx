@@ -11,7 +11,7 @@ import { StylePreviewGrid } from '../StylePicker/StylePreviewGrid';
 import type { StreamEvent } from '../../types';
 
 export function ChatPanel() {
-  const { messages, addMessage, updateLastMessage, isStreaming, setStreaming } = useChatStore();
+  const { messages, addMessage, appendToLastMessage, isStreaming, setStreaming } = useChatStore();
   const { sessionId, setSessionId } = usePresentationStore();
   const { apiKey } = useAuthStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -44,13 +44,13 @@ export function ChatPanel() {
   const handleMessage = (event: StreamEvent) => {
     if (event.type === 'text') {
       if (isStreaming) {
-        // Update the last message (assistant's streaming response)
-        const newContent = messages[messages.length - 1]?.content + event.content || event.content;
-        updateLastMessage(newContent);
+        // Append the new chunk to the last message
+        appendToLastMessage(event.content);
 
-        // Check if the message contains HTML
-        if (containsHTML(newContent)) {
-          const html = extractHTML(newContent);
+        // Check if the accumulated message contains HTML
+        const currentMessage = messages[messages.length - 1];
+        if (currentMessage && containsHTML(currentMessage.content)) {
+          const html = extractHTML(currentMessage.content);
           if (html) {
             setHTML(html);
             setSessionState('complete');
