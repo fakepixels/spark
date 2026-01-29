@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { ApiKeyModal } from './components/Auth/ApiKeyModal';
 import { ChatPanel } from './components/Chat/ChatPanel';
 import { PreviewPanel } from './components/Preview/PreviewPanel';
+import { showToast } from './components/Toast';
 import { useAuthStore } from './stores/authStore';
 import { usePresentationStore } from './stores/presentationStore';
 import { apiClient } from './lib/api';
@@ -25,15 +26,21 @@ function App() {
 
   const handleExport = () => {
     if (currentHTML) {
-      const blob = new Blob([currentHTML], { type: 'text/html' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `presentation-${Date.now()}.html`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      try {
+        const blob = new Blob([currentHTML], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `presentation-${Date.now()}.html`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('Presentation exported successfully!', 'success');
+      } catch (error) {
+        console.error('Export failed:', error);
+        showToast('Failed to export presentation', 'error');
+      }
     }
   };
 
