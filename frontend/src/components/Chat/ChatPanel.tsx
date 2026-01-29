@@ -79,9 +79,17 @@ export function ChatPanel() {
       console.log('=== STREAM DONE ===');
       console.log('Total accumulated length:', accumulated.length);
       console.log('First 200 chars:', accumulated.substring(0, 200));
-      console.log('Contains HTML?', containsHTML(accumulated));
 
-      if (accumulated && containsHTML(accumulated)) {
+      // Check if Claude is asking to generate style previews
+      const styleGenerationTrigger = /generate.*3.*style|style.*preview|choose.*style/i.test(accumulated);
+
+      if (styleGenerationTrigger && !stylePreviews.length) {
+        console.log('🎨 Detected style generation trigger!');
+        // Trigger style generation
+        handleStyleGeneration();
+      } else if (accumulated && containsHTML(accumulated)) {
+        // Check for HTML
+        console.log('Contains HTML?', containsHTML(accumulated));
         const html = extractHTML(accumulated);
         console.log('Final extract result:', html ? `SUCCESS (${html.length} chars)` : 'FAILED');
         if (html) {
@@ -107,11 +115,50 @@ export function ChatPanel() {
     }
   };
 
+  const handleStyleGeneration = async () => {
+    if (!sessionId) return;
+
+    console.log('🎨 Generating style previews...');
+
+    try {
+      // Extract purpose and topic from messages
+      const messageHistory = messages.map((m) => m.content).join('\n');
+      const purpose = extractPurpose(messageHistory);
+      const topic = extractTopic(messageHistory);
+
+      console.log('Purpose:', purpose, 'Topic:', topic);
+
+      // Call API to generate styles
+      const previews = await apiClient.generateStyles(sessionId, purpose, topic);
+
+      console.log('✓ Received', previews.length, 'style previews');
+
+      // Set previews in store
+      setStylePreviews(previews);
+      setSessionState('style_selection');
+    } catch (error) {
+      console.error('Failed to generate styles:', error);
+    }
+  };
+
+  const extractPurpose = (text: string): string => {
+    if (/pitch|investor|fund/i.test(text)) return 'pitch';
+    if (/teach|educat|learn/i.test(text)) return 'teaching';
+    if (/conference|talk|present/i.test(text)) return 'conference';
+    return 'internal';
+  };
+
+  const extractTopic = (text: string): string => {
+    // Simple extraction: get the last user message content
+    const userMessages = messages.filter((m) => m.role === 'user');
+    return userMessages[userMessages.length - 1]?.content || 'presentation';
+  };
+
   const handleStyleSelect = (styleId: string) => {
     // Send style selection as a message
     const selectedStyle = stylePreviews.find((p) => p.id === styleId);
     if (selectedStyle) {
-      handleSend(`I'd like to use the "${selectedStyle.name}" style.`);
+      handleSend(`I'd like to use the "${selectedStyle.name}" style. Please generate the full presentation.`);
     }
   };
 

@@ -47,6 +47,14 @@ class ApiClient {
     return `${API_URL}/api/sessions/${sessionId}/message`;
   }
 
+  async generateStyles(sessionId: string, purpose: string, topic: string) {
+    const response = await this.client.post(`/api/sessions/${sessionId}/generate-styles`, {
+      purpose,
+      topic,
+    });
+    return response.data.stylePreviews;
+  }
+
   async exportPresentation(sessionId: string): Promise<Blob> {
     const response = await this.client.get(`/api/sessions/${sessionId}/export`, {
       responseType: 'blob',

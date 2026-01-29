@@ -2,7 +2,9 @@ import { Router, Request, Response } from 'express';
 import { validateApiKey } from '../middleware/validateApiKey.js';
 import { sessionService } from '../services/sessionService.js';
 import { claudeService } from '../services/claudeService.js';
+import { daytonaService } from '../services/daytonaService.js';
 import { getSystemPrompt } from '../prompts/systemPrompt.js';
+import { getStyleGenerationPrompt, STYLE_MOODS } from '../prompts/styleGeneration.js';
 import type { Message } from '../types/index.js';
 
 const router = Router();
@@ -122,6 +124,75 @@ router.post('/sessions/:sessionId/message', async (req: Request, res: Response) 
       })}\n\n`
     );
     res.end();
+  }
+});
+
+// Generate style previews
+router.post('/sessions/:sessionId/generate-styles', async (req: Request, res: Response) => {
+  const { sessionId } = req.params;
+  const { purpose, topic } = req.body;
+
+  const session = sessionService.getSession(sessionId);
+
+  if (!session) {
+    res.status(404).json({
+      error: {
+        code: 'SESSION_NOT_FOUND',
+        message: 'Session not found or expired',
+      },
+    });
+    return;
+  }
+
+  try {
+    console.log('🎨 Generating style previews for purpose:', purpose);
+
+    // Get mood based on purpose
+    const mood = STYLE_MOODS[purpose as keyof typeof STYLE_MOODS] || 'professional';
+
+    // Create prompt for Claude to generate JavaScript code
+    const stylePrompt = getStyleGenerationPrompt(purpose, mood);
+
+    // Ask Claude to generate the JavaScript code
+    const jsCode = await claudeService.sendMessage(
+      session.apiKey,
+      [{ role: 'user', content: stylePrompt, timestamp: Date.now() }],
+      'You are a creative presentation designer who generates JavaScript code.'
+    );
+
+    console.log('✓ Received JS code from Claude, length:', jsCode.length);
+
+    // Extract JavaScript code from Claude's response
+    const codeMatch = jsCode.match(/```javascript\s*([\s\S]*?)\s*```/);
+    const code = codeMatch ? codeMatch[1] : jsCode;
+
+    console.log('✓ Extracted code, executing in Daytona...');
+
+    // Execute in Daytona to get the 3 HTML previews
+    const htmlPreviews = await daytonaService.generatePreviews(code);
+
+    console.log('✓ Generated previews:', htmlPreviews.length);
+
+    // Create style preview objects with metadata
+    const stylePreviews = htmlPreviews.map((html: string, index: number) => ({
+      id: `style-${index + 1}`,
+      name: `Style ${index + 1}`,
+      description: `Unique design option ${index + 1}`,
+      html,
+    }));
+
+    // Update session state
+    sessionService.updateSession(sessionId, { state: 'style_selection' });
+
+    res.json({ stylePreviews });
+  } catch (error: any) {
+    console.error('Error generating style previews:', error);
+    res.status(500).json({
+      error: {
+        code: 'STYLE_GENERATION_FAILED',
+        message: error.message || 'Failed to generate style previews',
+      },
+    });
   }
 });
 
