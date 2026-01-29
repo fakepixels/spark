@@ -18,28 +18,22 @@ export async function validateApiKey(
     return;
   }
 
-  try {
-    // Test the API key with a minimal request
-    const client = new Anthropic({ apiKey });
-
-    await client.messages.create({
-      model: 'claude-3-5-sonnet-20241022',
-      max_tokens: 10,
-      messages: [{ role: 'user', content: 'test' }],
-    });
-
-    // If successful, store the key in the request for later use
-    req.apiKey = apiKey;
-    next();
-  } catch (error: any) {
-    console.error('API key validation failed:', error.message);
+  // Basic format validation for Anthropic API keys
+  // Keys should start with 'sk-ant-' and be at least 20 characters
+  if (!apiKey.startsWith('sk-ant-') || apiKey.length < 20) {
     res.status(401).json({
       error: {
         code: 'INVALID_API_KEY',
-        message: 'Invalid Anthropic API key',
+        message: 'Invalid Anthropic API key format',
       },
     });
+    return;
   }
+
+  // If format is valid, store the key in the request for later use
+  // Actual validation will happen when the key is first used
+  req.apiKey = apiKey;
+  next();
 }
 
 // Extend Express Request type to include apiKey
