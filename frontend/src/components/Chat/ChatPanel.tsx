@@ -122,6 +122,7 @@ export function ChatPanel() {
     { message: pendingMessage },
     {
       onMessage: handleMessage,
+      apiKey: apiKey || undefined,
       onComplete: () => {
         setStreaming(false);
         setPendingMessage(null);
