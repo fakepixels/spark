@@ -1,17 +1,41 @@
 import { useEffect } from 'react';
 import { ApiKeyModal } from './components/Auth/ApiKeyModal';
 import { ChatPanel } from './components/Chat/ChatPanel';
+import { PreviewPanel } from './components/Preview/PreviewPanel';
 import { useAuthStore } from './stores/authStore';
+import { usePresentationStore } from './stores/presentationStore';
 import { apiClient } from './lib/api';
 
 function App() {
   const { apiKey } = useAuthStore();
+  const { currentHTML, reset } = usePresentationStore();
 
   useEffect(() => {
     if (apiKey) {
       apiClient.setApiKey(apiKey);
     }
   }, [apiKey]);
+
+  const handleNewPresentation = () => {
+    if (confirm('Start a new presentation? Current work will be lost.')) {
+      reset();
+      window.location.reload();
+    }
+  };
+
+  const handleExport = () => {
+    if (currentHTML) {
+      const blob = new Blob([currentHTML], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `presentation-${Date.now()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+  };
 
   return (
     <div className="h-screen flex flex-col">
@@ -31,10 +55,17 @@ function App() {
                 </p>
               </div>
               <div className="flex gap-4">
-                <button className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors">
+                <button
+                  onClick={handleNewPresentation}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+                >
                   New Presentation
                 </button>
-                <button className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button
+                  onClick={handleExport}
+                  disabled={!currentHTML}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
                   Export HTML
                 </button>
               </div>
@@ -49,14 +80,8 @@ function App() {
             </div>
 
             {/* Preview Panel */}
-            <div className="flex-1 bg-gray-100 flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <div className="text-6xl mb-4">🎨</div>
-                <h3 className="text-xl font-semibold mb-2">Preview Coming Soon</h3>
-                <p className="text-sm">
-                  Your presentation preview will appear here
-                </p>
-              </div>
+            <div className="flex-1">
+              <PreviewPanel />
             </div>
           </div>
         </>
