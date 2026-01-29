@@ -6,6 +6,7 @@ import { apiClient } from '../../lib/api';
 import { useSSE } from '../../hooks/useSSE';
 import { MessageBubble } from './MessageBubble';
 import { InputArea } from './InputArea';
+import { StylePreviewGrid } from '../StylePicker/StylePreviewGrid';
 import type { StreamEvent } from '../../types';
 
 export function ChatPanel() {
@@ -37,6 +38,8 @@ export function ChatPanel() {
     }
   };
 
+  const { stylePreviews, setStylePreviews, setSessionState } = usePresentationStore();
+
   const handleMessage = (event: StreamEvent) => {
     if (event.type === 'text') {
       if (isStreaming) {
@@ -45,6 +48,10 @@ export function ChatPanel() {
           messages[messages.length - 1]?.content + event.content || event.content
         );
       }
+    } else if (event.type === 'style_previews') {
+      // Received style previews
+      setStylePreviews(event.data);
+      setSessionState('style_selection');
     } else if (event.type === 'done') {
       setStreaming(false);
       setPendingMessage(null);
@@ -52,6 +59,14 @@ export function ChatPanel() {
       console.error('Stream error:', event.data);
       setStreaming(false);
       setPendingMessage(null);
+    }
+  };
+
+  const handleStyleSelect = (styleId: string) => {
+    // Send style selection as a message
+    const selectedStyle = stylePreviews.find((p) => p.id === styleId);
+    if (selectedStyle) {
+      handleSend(`I'd like to use the "${selectedStyle.name}" style.`);
     }
   };
 
@@ -132,6 +147,15 @@ export function ChatPanel() {
             {messages.map((message, index) => (
               <MessageBubble key={index} message={message} />
             ))}
+
+            {/* Show style previews if available */}
+            {stylePreviews.length > 0 && (
+              <StylePreviewGrid
+                previews={stylePreviews}
+                onSelect={handleStyleSelect}
+              />
+            )}
+
             <div ref={messagesEndRef} />
           </>
         )}
