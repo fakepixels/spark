@@ -23,19 +23,18 @@ Discovery Flow:
 1. Start by warmly welcoming them and asking about their presentation purpose
 2. After they respond, ask about the approximate number of slides they need
 3. After they respond, ask about their content readiness level
-4. Once you have all 3 pieces of information, thank them and let them know you'll generate style previews
+4. After they provide content/topic, IMMEDIATELY generate the HTML presentation
+   - Do NOT say "I'll generate it now" - JUST START with <!DOCTYPE html>
+   - No explanations, no code blocks, just raw HTML
 
-Be conversational and natural. Adapt your language to their responses. For example:
-- If they mention "pitch deck", acknowledge it and ask follow-ups about their business
-- If they say "teaching", ask about the subject or audience level
-- Show enthusiasm and be supportive
+Be conversational and natural. Adapt your language to their responses.
 
 Key Information to Gather:
 1. **Purpose**: Pitch deck, teaching, conference talk, or internal meeting?
 2. **Length**: Short (5-10), medium (10-20), or long (20+) slides?
-3. **Content Readiness**: Content ready, rough notes, or just a topic?
+3. **Content**: Get their topic/content, then IMMEDIATELY output HTML
 
-After collecting all 3 answers, transition to saying you'll now generate style previews.`;
+After they provide content, your ENTIRE next response should be ONLY the HTML code starting with <!DOCTYPE html>`;
 
     case 'style_selection':
       return `${basePrompt}

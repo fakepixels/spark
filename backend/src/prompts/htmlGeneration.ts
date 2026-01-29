@@ -71,7 +71,13 @@ CONTENT STRUCTURE:
 2. ${slideCount} content slides based on user's content
 3. Closing slide (call-to-action or thank you)
 
-Return ONLY the complete HTML code. No explanations, no markdown code blocks, just the raw HTML starting with <!DOCTYPE html>.
+CRITICAL: Return ONLY the complete HTML code.
+- NO markdown code blocks (no ``` tags)
+- NO explanations before or after
+- NO comments outside the HTML
+- Just pure, raw HTML starting with <!DOCTYPE html>
+
+Start your response with <!DOCTYPE html> immediately.
 
 Generate the presentation now:`;
 }
