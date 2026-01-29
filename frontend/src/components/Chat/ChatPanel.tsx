@@ -52,10 +52,14 @@ export function ChatPanel() {
         appendToLastMessage(event.content);
 
         // Check if the accumulated content contains HTML
-        if (containsHTML(accumulatedContentRef.current)) {
-          const html = extractHTML(accumulatedContentRef.current);
+        const accumulated = accumulatedContentRef.current;
+        console.log('Checking for HTML... length:', accumulated.length, 'contains:', containsHTML(accumulated));
+
+        if (containsHTML(accumulated)) {
+          const html = extractHTML(accumulated);
+          console.log('Extract result:', html ? `SUCCESS (${html.length} chars)` : 'FAILED');
           if (html) {
-            console.log('✓ HTML extracted, length:', html.length);
+            console.log('✓ HTML extracted, setting in preview');
             setHTML(html);
             setSessionState('complete');
           }
@@ -71,13 +75,24 @@ export function ChatPanel() {
       setSessionState('complete');
     } else if (event.type === 'done') {
       // Final check when streaming is complete
-      if (accumulatedContentRef.current && containsHTML(accumulatedContentRef.current)) {
-        const html = extractHTML(accumulatedContentRef.current);
+      const accumulated = accumulatedContentRef.current;
+      console.log('=== STREAM DONE ===');
+      console.log('Total accumulated length:', accumulated.length);
+      console.log('First 200 chars:', accumulated.substring(0, 200));
+      console.log('Contains HTML?', containsHTML(accumulated));
+
+      if (accumulated && containsHTML(accumulated)) {
+        const html = extractHTML(accumulated);
+        console.log('Final extract result:', html ? `SUCCESS (${html.length} chars)` : 'FAILED');
         if (html) {
-          console.log('✓ HTML extracted on completion, length:', html.length);
+          console.log('✓ Setting HTML in preview panel');
           setHTML(html);
           setSessionState('complete');
+        } else {
+          console.error('❌ containsHTML returned true but extractHTML returned null');
         }
+      } else {
+        console.log('❌ No HTML detected in accumulated content');
       }
 
       // Reset accumulated content
