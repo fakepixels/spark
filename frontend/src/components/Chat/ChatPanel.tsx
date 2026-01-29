@@ -16,6 +16,7 @@ export function ChatPanel() {
   const { apiKey } = useAuthStore();
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+  const accumulatedContentRef = useRef<string>('');
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -44,14 +45,17 @@ export function ChatPanel() {
   const handleMessage = (event: StreamEvent) => {
     if (event.type === 'text') {
       if (isStreaming) {
+        // Accumulate content in ref for immediate access
+        accumulatedContentRef.current += event.content;
+
         // Append the new chunk to the last message
         appendToLastMessage(event.content);
 
-        // Check if the accumulated message contains HTML
-        const currentMessage = messages[messages.length - 1];
-        if (currentMessage && containsHTML(currentMessage.content)) {
-          const html = extractHTML(currentMessage.content);
+        // Check if the accumulated content contains HTML
+        if (containsHTML(accumulatedContentRef.current)) {
+          const html = extractHTML(accumulatedContentRef.current);
           if (html) {
+            console.log('✓ HTML extracted, length:', html.length);
             setHTML(html);
             setSessionState('complete');
           }
@@ -66,10 +70,23 @@ export function ChatPanel() {
       setHTML(event.data);
       setSessionState('complete');
     } else if (event.type === 'done') {
+      // Final check when streaming is complete
+      if (accumulatedContentRef.current && containsHTML(accumulatedContentRef.current)) {
+        const html = extractHTML(accumulatedContentRef.current);
+        if (html) {
+          console.log('✓ HTML extracted on completion, length:', html.length);
+          setHTML(html);
+          setSessionState('complete');
+        }
+      }
+
+      // Reset accumulated content
+      accumulatedContentRef.current = '';
       setStreaming(false);
       setPendingMessage(null);
     } else if (event.type === 'error') {
       console.error('Stream error:', event.data);
+      accumulatedContentRef.current = '';
       setStreaming(false);
       setPendingMessage(null);
     }
@@ -111,6 +128,9 @@ export function ChatPanel() {
 
   const handleSend = (message: string) => {
     if (!sessionId || isStreaming) return;
+
+    // Reset accumulated content for new message
+    accumulatedContentRef.current = '';
 
     // Add user message
     addMessage({
