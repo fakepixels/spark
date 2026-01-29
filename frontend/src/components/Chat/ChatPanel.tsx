@@ -4,6 +4,7 @@ import { usePresentationStore } from '../../stores/presentationStore';
 import { useAuthStore } from '../../stores/authStore';
 import { apiClient } from '../../lib/api';
 import { useSSE } from '../../hooks/useSSE';
+import { extractHTML, containsHTML } from '../../lib/htmlExtractor';
 import { MessageBubble } from './MessageBubble';
 import { InputArea } from './InputArea';
 import { StylePreviewGrid } from '../StylePicker/StylePreviewGrid';
@@ -38,20 +39,32 @@ export function ChatPanel() {
     }
   };
 
-  const { stylePreviews, setStylePreviews, setSessionState } = usePresentationStore();
+  const { stylePreviews, setStylePreviews, setSessionState, setHTML } = usePresentationStore();
 
   const handleMessage = (event: StreamEvent) => {
     if (event.type === 'text') {
       if (isStreaming) {
         // Update the last message (assistant's streaming response)
-        updateLastMessage(
-          messages[messages.length - 1]?.content + event.content || event.content
-        );
+        const newContent = messages[messages.length - 1]?.content + event.content || event.content;
+        updateLastMessage(newContent);
+
+        // Check if the message contains HTML
+        if (containsHTML(newContent)) {
+          const html = extractHTML(newContent);
+          if (html) {
+            setHTML(html);
+            setSessionState('complete');
+          }
+        }
       }
     } else if (event.type === 'style_previews') {
       // Received style previews
       setStylePreviews(event.data);
       setSessionState('style_selection');
+    } else if (event.type === 'html_update') {
+      // Direct HTML update from backend
+      setHTML(event.data);
+      setSessionState('complete');
     } else if (event.type === 'done') {
       setStreaming(false);
       setPendingMessage(null);
